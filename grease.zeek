@@ -6,6 +6,11 @@ export {
     type GreaseInfo: record {
         ts: time &log;
 
+        ## Unique ID for the connection.
+		uid:                     string    &log;
+		## The connection's 4-tuple of endpoint addresses/ports.
+		id:                      conn_id   &log;
+
         # Amount of GREASE values in cipher lists
         grease_cipher_count: count &log &default=0;
         # Total amount of ciphers in cipher list
@@ -95,6 +100,8 @@ function add_grease_section(c:connection) {
     if ( !c?$grease ) {
         local g : GreaseInfo;
         g$ts = network_time();
+        g$id = c$id;
+        g$uid = c$uid;
         c$grease = g;
     }
 }

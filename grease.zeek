@@ -8,12 +8,13 @@ export {
 
         # Amount of GREASE values in cipher lists
         grease_cipher_count: count &log &default=0;
-
         # Total amount of ciphers in cipher list
         total_cipher_count: count &log &default=0;
 
         # Amount of GREASE values in extension list
         grease_extension_count: count &log &default=0;
+        # Total amount of extensions
+        total_extension_count: count &log &default=0;
 
         # The indices of the extension that contains the GREASE value
         grease_extension_index: vector of count &log &default = vector();
@@ -23,9 +24,13 @@ export {
 
         # The amount of GREASE values in named groups list
         grease_named_groups_count: count &log &default=0;
-
         # Total amount of named groups in list
         total_named_groups_count: count &log &default=0;
+
+        # The amount of GREASE values in elliptic curves list
+        grease_elliptic_curves_count: count &log &default=0;
+        # Total amount of elliptic curves list
+        total_elliptic_curves_count: count &log &default=0;
 
         # Name of the server to which is connected
         server_name: string &log;
@@ -84,18 +89,20 @@ event ssl_client_hello(c: connection, version: count, record_version: count, pos
         c$grease$total_cipher_count = |ciphers|;
 
         Log::write(GREASE::LOG, c$grease);
-
     }
 
-# Count the amount of (GREASE) extension values
-event ssl_extension(c: connection, is_orig: bool, code: count, val: string)
-	{
-
+function add_grease_section(c:connection) {
     if ( !c?$grease ) {
         local g : GreaseInfo;
         g$ts = network_time();
         c$grease = g;
     }
+}
+
+# Count the amount of (GREASE) extension values
+event ssl_extension(c: connection, is_orig: bool, code: count, val: string)
+	{
+    add_grease_section(c);
 
 	if ( is_orig )
 		if (is_grease_value(code)) {
@@ -103,11 +110,14 @@ event ssl_extension(c: connection, is_orig: bool, code: count, val: string)
             c$grease$grease_extension_index[|c$grease$grease_extension_index|] = c$grease$grease_current_extension_index;
         }
         c$grease$grease_current_extension_index += 1;
+        c$grease$total_extension_count += 1;
 	}
 
 
 # Count groups in key_share extension
 event ssl_extension_key_share (c: connection, is_client: bool, curves: index_vec) {
+    add_grease_section(c);
+
     if ( is_client ) {
         local p : count = 0;
         local key_share_count: count = 0;
@@ -117,6 +127,24 @@ event ssl_extension_key_share (c: connection, is_client: bool, curves: index_vec
                 c$grease$grease_named_groups_count += 1;
             }
             c$grease$total_named_groups_count += 1;
+        }
+
+    }
+}
+
+# Count elliptic curves in elliptic_curves extension
+event ssl_extension_elliptic_curves (c: connection, is_client: bool, curves: index_vec) {
+    add_grease_section(c);
+
+    if ( is_client ) {
+        local p : count = 0;
+        local key_share_count: count = 0;
+
+        for (index in curves) {
+            if (is_grease_value(curves[index])) {
+                c$grease$grease_elliptic_curves_count += 1;
+            }
+            c$grease$total_elliptic_curves_count += 1;
         }
 
     }

@@ -7,9 +7,9 @@ export {
         ts: time &log;
 
         ## Unique ID for the connection.
-		uid:                     string    &log;
-		## The connection's 4-tuple of endpoint addresses/ports.
-		id:                      conn_id   &log;
+        uid:                     string    &log;
+        ## The connection's 4-tuple of endpoint addresses/ports.
+        id:                      conn_id   &log;
 
         # Amount of GREASE values in cipher lists
         grease_cipher_count: count &log &default=0;
@@ -62,7 +62,7 @@ global grease_cipher_values :set[int] ={
     0xfafa};
 
 redef record connection += {
-	grease: GreaseInfo &optional;
+    grease: GreaseInfo &optional;
 };
 
 function is_grease_value(p: int): bool {
@@ -74,13 +74,11 @@ function is_grease_value(p: int): bool {
 
 # Count the amount of (GREASE) ciphers
 event ssl_client_hello(c: connection, version: count, record_version: count, possible_ts: time, client_random: string, session_id: string, ciphers: index_vec, comp_methods: index_vec) &priority=5
-	{
-        local p: int;
+    {
         local grease_count: count = 0;
 
         for ( index in ciphers) {
-            p = ciphers[index];
-            if ( is_grease_value(p)) {
+            if ( is_grease_value(ciphers[index])) {
                 grease_count +=1;
             }
         }
@@ -104,17 +102,17 @@ function add_grease_section(c:connection) {
 
 # Count the amount of (GREASE) extension values
 event ssl_extension(c: connection, is_orig: bool, code: count, val: string)
-	{
+    {
     add_grease_section(c);
 
-	if ( is_orig )
-		if (is_grease_value(code)) {
+    if ( is_orig )
+        if (is_grease_value(code)) {
             c$grease$grease_extension_count += 1;
             c$grease$grease_extension_index[|c$grease$grease_extension_index|] = c$grease$grease_current_extension_index;
         }
         c$grease$grease_current_extension_index += 1;
         c$grease$total_extension_count += 1;
-	}
+    }
 
 
 # Count groups in key_share extension
@@ -122,7 +120,6 @@ event ssl_extension_key_share (c: connection, is_client: bool, curves: index_vec
     add_grease_section(c);
 
     if ( is_client ) {
-        local p : count = 0;
         local key_share_count: count = 0;
 
         for (index in curves) {
@@ -140,7 +137,6 @@ event ssl_extension_elliptic_curves (c: connection, is_client: bool, curves: ind
     add_grease_section(c);
 
     if ( is_client ) {
-        local p : count = 0;
         local key_share_count: count = 0;
 
         for (index in curves) {

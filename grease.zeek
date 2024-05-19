@@ -43,7 +43,7 @@ export {
 }
 
 
-global grease_cipher_values :index_vec ={
+global grease_cipher_values :set[int] ={
     0x0a0a,
     0x1a1a,
     0x2a2a,
@@ -65,12 +65,9 @@ redef record connection += {
 	grease: GreaseInfo &optional;
 };
 
-# FIXME I'm sure this can be implemented more efficiently
 function is_grease_value(p: int): bool {
-    for (j in grease_cipher_values ) {
-        if (grease_cipher_values[j] == p ) {
-            return T;
-        }
+    if (p in grease_cipher_values) {
+        return T;
     }
     return F;
 }
@@ -79,8 +76,7 @@ function is_grease_value(p: int): bool {
 event ssl_client_hello(c: connection, version: count, record_version: count, possible_ts: time, client_random: string, session_id: string, ciphers: index_vec, comp_methods: index_vec) &priority=5
 	{
         local p: int;
-        local grease_count: int;
-        grease_count = 0;
+        local grease_count: count = 0;
 
         for ( index in ciphers) {
             p = ciphers[index];

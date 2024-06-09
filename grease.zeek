@@ -11,11 +11,16 @@ export {
         ## The connection's 4-tuple of endpoint addresses/ports.
         id:                      conn_id   &log;
 
+
+        # GREASE values in cipher section:
+        grease_cipher_values: vector of int &log &default = vector();
         # Amount of GREASE values in cipher lists
         grease_cipher_count: count &log &default=0;
         # Total amount of ciphers in cipher list
         total_cipher_count: count &log &default=0;
 
+        # GREASE valies in extension section:
+        grease_extension_values: vector of int &log &default = vector();
         # Amount of GREASE values in extension list
         grease_extension_count: count &log &default=0;
         # Total amount of extensions
@@ -27,11 +32,15 @@ export {
         # Helper variable to keep track of current extension index
         grease_current_extension_index: count &default = 0;
 
+        # GREASE values in named groups section
+        grease_named_groups_values: vector of int &log &default = vector();
         # The amount of GREASE values in named groups list
         grease_named_groups_count: count &log &default=0;
         # Total amount of named groups in list
         total_named_groups_count: count &log &default=0;
 
+        # GREASE values in elliptic curves section
+        grease_elliptic_curves_values: vector of int &log &default = vector();
         # The amount of GREASE values in elliptic curves list
         grease_elliptic_curves_count: count &log &default=0;
         # Total amount of elliptic curves list
@@ -79,6 +88,7 @@ event ssl_client_hello(c: connection, version: count, record_version: count, pos
 
         for ( index in ciphers) {
             if ( is_grease_value(ciphers[index])) {
+                c$grease$grease_cipher_values[|c$grease$grease_cipher_values|] = ciphers[index];
                 grease_count +=1;
             }
         }
@@ -109,6 +119,7 @@ event ssl_extension(c: connection, is_orig: bool, code: count, val: string)
         if (is_grease_value(code)) {
             c$grease$grease_extension_count += 1;
             c$grease$grease_extension_index[|c$grease$grease_extension_index|] = c$grease$grease_current_extension_index;
+            c$grease$grease_extension_values[|c$grease$grease_extension_values|] = code;
         }
         c$grease$grease_current_extension_index += 1;
         c$grease$total_extension_count += 1;
@@ -125,6 +136,7 @@ event ssl_extension_key_share (c: connection, is_client: bool, curves: index_vec
         for (index in curves) {
             if (is_grease_value(curves[index])) {
                 c$grease$grease_named_groups_count += 1;
+                c$grease$grease_named_groups_values[|c$grease$grease_named_groups_values|] = curves[index];
             }
             c$grease$total_named_groups_count += 1;
         }
@@ -142,6 +154,7 @@ event ssl_extension_elliptic_curves (c: connection, is_client: bool, curves: ind
         for (index in curves) {
             if (is_grease_value(curves[index])) {
                 c$grease$grease_elliptic_curves_count += 1;
+                c$grease$grease_elliptic_curves_values[|c$grease$grease_elliptic_curves_values|] = curves[index];
             }
             c$grease$total_elliptic_curves_count += 1;
         }
